@@ -1,7 +1,7 @@
 # AWS configuration
 aws:
   region: ap-south-1
-  
+
 provider:
   # AWS provider package (Upbound)
   package: xpkg.upbound.io/crossplane-contrib/provider-aws:v0.56.0
@@ -16,58 +16,58 @@ installOrder:
   enabled: true
   providerWave: "0"
   providerConfigWave: "1"
-  vpcWave: "2"
 
-# Values for the VPC stack
-vpc:
-  name: demo-vpc
-  cidrBlock: 10.0.0.0/16
-  enableDnsSupport: true
-  tags:
-    - key: Name
-      value: demo-vpc
-    - key: Environment
-      value: dev
-
-subnets:
+# Composition-driven VPC configuration
+composition:
   enabled: true
-  public:
+  name: aws-vpc
+  className: standard
+  compositeName: demo-network
+  claimName: demo-network
+  providerConfigName: aws-provider
+  vpc:
+    cidrBlock: 10.0.0.0/16
+    enableDnsSupport: true
+    enableDnsHostnames: true
+    tags:
+      - key: Name
+        value: demo-vpc
+      - key: Environment
+        value: dev
+  publicSubnets:
+    - name: demo-public-subnet-a
+      cidrBlock: 10.0.1.0/24
+      availabilityZone: ap-south-1a
+      tags:
+        - key: Name
+          value: demo-public-subnet-a
+        - key: Environment
+          value: dev
+    - name: demo-public-subnet-b
+      cidrBlock: 10.0.11.0/24
+      availabilityZone: ap-south-1b
+      tags:
+        - key: Name
+          value: demo-public-subnet-b
+        - key: Environment
+          value: dev
+  privateSubnets:
+    - name: demo-private-subnet-a
+      cidrBlock: 10.0.2.0/24
+      availabilityZone: ap-south-1a
+      tags:
+        - key: Name
+          value: demo-private-subnet-a
+        - key: Environment
+          value: dev
+    - name: demo-private-subnet-b
+      cidrBlock: 10.0.12.0/24
+      availabilityZone: ap-south-1b
+      tags:
+        - key: Name
+          value: demo-private-subnet-b
+        - key: Environment
+          value: dev
+  natGateway:
     enabled: true
-    items:
-      - name: demo-public-subnet-a
-        cidrBlock: 10.0.1.0/24
-        availabilityZone: ap-south-1a
-        tags:
-          - key: Name
-            value: demo-public-subnet-a
-          - key: Environment
-            value: dev
-      - name: demo-public-subnet-b
-        cidrBlock: 10.0.11.0/24
-        availabilityZone: ap-south-1b
-        mapPublicIpOnLaunch: true
-        tags:
-          - key: Name
-            value: demo-public-subnet-b
-          - key: Environment
-            value: dev
-  private:
-    enabled: true
-    items:
-      - name: demo-private-subnet-a
-        cidrBlock: 10.0.2.0/24
-        availabilityZone: ap-south-1a
-        tags:
-          - key: Name
-            value: demo-private-subnet-a
-          - key: Environment
-            value: dev
-      - name: demo-private-subnet-b
-        cidrBlock: 10.0.12.0/24
-        availabilityZone: ap-south-1b
-        mapPublicIpOnLaunch: false
-        tags:
-          - key: Name
-            value: demo-private-subnet-b
-          - key: Environment
-            value: dev
+    publicSubnetIndex: 0
