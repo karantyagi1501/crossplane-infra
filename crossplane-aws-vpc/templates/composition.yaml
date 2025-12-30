@@ -7,7 +7,6 @@ spec:
   compositeTypeRef:
     apiVersion: network.aws.crossplane.io/v1alpha1
     kind: CompositeVPC
-  mode: Resources
   resources:
     - name: vpc
       base:
