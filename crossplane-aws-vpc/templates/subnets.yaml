@@ -1,0 +1,54 @@
+{{- $ctx := . -}}
+{{- $hasPublic := and $ctx.Values.subnets.public.enabled (gt (len $ctx.Values.subnets.public.items) 0) -}}
+{{- $hasPrivate := and $ctx.Values.subnets.private.enabled (gt (len $ctx.Values.subnets.private.items) 0) -}}
+{{- if and $ctx.Values.subnets.enabled (or $hasPublic $hasPrivate) }}
+{{- $wave := "" -}}
+{{- $syncOpts := "" -}}
+{{- if $ctx.Values.installOrder.enabled }}
+  {{- $wave = $ctx.Values.installOrder.subnetWave | quote -}}
+  {{- $syncOpts = "SkipDryRunOnMissingResource=true" -}}
+{{- end }}
+
+{{- define "renderSubnet" -}}
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: {{ .item.name | quote }}
+  {{- if $.wave }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $.wave }}
+    argocd.argoproj.io/sync-options: {{ $.syncOpts }}
+  {{- end }}
+spec:
+  forProvider:
+    region: {{ $.region | quote }}
+    availabilityZone: {{ .item.availabilityZone | quote }}
+    cidrBlock: {{ .item.cidrBlock | quote }}
+    mapPublicIpOnLaunch: {{ default false .item.mapPublicIpOnLaunch }}
+    vpcIdRef:
+      name: {{ $.vpcName | quote }}
+    {{- if .item.tags }}
+    tags:
+    {{- range .item.tags }}
+      - key: {{ .key | quote }}
+        value: {{ .value | quote }}
+    {{- end }}
+    {{- end }}
+  providerConfigRef:
+    name: {{ $.providerConfigName | quote }}
+{{- end }}
+
+{{- if $hasPublic }}
+{{- range $ctx.Values.subnets.public.items }}
+---
+{{ template "renderSubnet" (dict "item" . "region" $ctx.Values.aws.region "vpcName" $ctx.Values.vpc.name "providerConfigName" "aws-provider" "wave" $wave "syncOpts" $syncOpts) }}
+{{- end }}
+{{- end }}
+
+{{- if $hasPrivate }}
+{{- range $ctx.Values.subnets.private.items }}
+---
+{{ template "renderSubnet" (dict "item" . "region" $ctx.Values.aws.region "vpcName" $ctx.Values.vpc.name "providerConfigName" "aws-provider" "wave" $wave "syncOpts" $syncOpts) }}
+{{- end }}
+{{- end }}
+{{- end }}
