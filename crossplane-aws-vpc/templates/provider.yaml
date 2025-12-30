@@ -1,7 +1,7 @@
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
-  name: provider-family-aws
+  name: provider-aws
   {{- if .Values.installOrder.enabled }}
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.installOrder.providerWave | quote }}
