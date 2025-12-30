@@ -24,6 +24,7 @@ composition:
   className: standard
   compositeName: demo-network
   claimName: demo-network
+  claimNamespace: crossplane-system
   providerConfigName: aws-provider
   vpc:
     cidrBlock: 10.0.0.0/16
