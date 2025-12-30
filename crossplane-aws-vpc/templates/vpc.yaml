@@ -2,6 +2,11 @@ apiVersion: ec2.aws.upbound.io/v1beta1
 kind: VPC
 metadata:
   name: {{ .Values.vpc.name | quote }}
+  {{- if .Values.installOrder.enabled }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.installOrder.vpcWave | quote }}
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  {{- end }}
 spec:
   forProvider:
     region: {{ .Values.aws.region | quote }}
