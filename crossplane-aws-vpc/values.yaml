@@ -25,5 +25,7 @@ vpc:
   enableDnsSupport: true
   enableDnsHostnames: true
   tags:
-    Name: demo-vpc
-    Environment: dev
+    - key: Name
+      value: demo-vpc
+    - key: Environment
+      value: dev
