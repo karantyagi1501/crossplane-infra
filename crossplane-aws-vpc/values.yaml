@@ -1,0 +1,23 @@
+# AWS Provider configuration
+aws:
+  region: ap-south-1
+
+provider:
+  # AWS provider package (Upbound)
+  package: xpkg.upbound.io/upbound/provider-family-aws:v2.3.0
+
+credentials:
+  secretNamespace: crossplane-system
+  secretName: aws-secret
+  secretKey: creds
+
+
+# Values for the VPC stack
+vpc:
+  name: demo-vpc
+  cidrBlock: 10.0.0.0/16
+  enableDnsSupport: true
+  enableDnsHostnames: true
+  tags:
+    Name: demo-vpc
+    Environment: dev
