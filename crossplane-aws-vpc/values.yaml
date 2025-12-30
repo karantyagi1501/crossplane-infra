@@ -1,4 +1,7 @@
 # AWS configuration
+aws:
+  region: ap-south-1
+  
 provider:
   # AWS provider package (Upbound)
   package: xpkg.upbound.io/upbound/provider-family-aws:v2.3.0
