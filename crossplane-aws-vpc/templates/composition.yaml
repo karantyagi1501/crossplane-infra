@@ -1,0 +1,317 @@
+{{- if .Values.composition.enabled }}
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: {{ .Values.composition.name | quote }}
+spec:
+  compositeTypeRef:
+    apiVersion: network.aws.crossplane.io/v1alpha1
+    kind: CompositeVPC
+  mode: Resources
+  resources:
+    - name: vpc
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: VPC
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: vpc
+        spec:
+          forProvider:
+            cidrBlock: ""
+            enableDnsSupport: true
+            enableDnsHostnames: true
+            region: ""
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.vpc.cidrBlock"
+          toFieldPath: "spec.forProvider.cidrBlock"
+        - fromFieldPath: "spec.parameters.vpc.enableDnsSupport"
+          toFieldPath: "spec.forProvider.enableDnsSupport"
+        - fromFieldPath: "spec.parameters.vpc.enableDnsHostnames"
+          toFieldPath: "spec.forProvider.enableDnsHostnames"
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+        - fromFieldPath: "spec.parameters.vpc.tags"
+          toFieldPath: "spec.forProvider.tags"
+    {{- if gt (len .Values.composition.publicSubnets) 0 }}
+    {{- range $i, $sn := .Values.composition.publicSubnets }}
+    - name: public-subnet-{{ $i }}
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: Subnet
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: subnet
+            network.aws.crossplane.io/subnet-type: public
+            network.aws.crossplane.io/subnet-name: {{ $sn.name | quote }}
+            network.aws.crossplane.io/subnet-index: "{{ $i }}"
+        spec:
+          forProvider:
+            region: ""
+            cidrBlock: ""
+            availabilityZone: ""
+            vpcIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: vpc
+            tags: []
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+        - fromFieldPath: "spec.parameters.publicSubnets[{{ $i }}].cidrBlock"
+          toFieldPath: "spec.forProvider.cidrBlock"
+        - fromFieldPath: "spec.parameters.publicSubnets[{{ $i }}].availabilityZone"
+          toFieldPath: "spec.forProvider.availabilityZone"
+        - fromFieldPath: "spec.parameters.publicSubnets[{{ $i }}].tags"
+          toFieldPath: "spec.forProvider.tags"
+    {{- end }}
+    {{- end }}
+    {{- if gt (len .Values.composition.privateSubnets) 0 }}
+    {{- range $i, $sn := .Values.composition.privateSubnets }}
+    - name: private-subnet-{{ $i }}
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: Subnet
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: subnet
+            network.aws.crossplane.io/subnet-type: private
+            network.aws.crossplane.io/subnet-name: {{ $sn.name | quote }}
+            network.aws.crossplane.io/subnet-index: "{{ $i }}"
+        spec:
+          forProvider:
+            region: ""
+            cidrBlock: ""
+            availabilityZone: ""
+            vpcIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: vpc
+            tags: []
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+        - fromFieldPath: "spec.parameters.privateSubnets[{{ $i }}].cidrBlock"
+          toFieldPath: "spec.forProvider.cidrBlock"
+        - fromFieldPath: "spec.parameters.privateSubnets[{{ $i }}].availabilityZone"
+          toFieldPath: "spec.forProvider.availabilityZone"
+        - fromFieldPath: "spec.parameters.privateSubnets[{{ $i }}].tags"
+          toFieldPath: "spec.forProvider.tags"
+    {{- end }}
+    {{- end }}
+    - name: internet-gateway
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: InternetGateway
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: igw
+        spec:
+          forProvider:
+            region: ""
+            tags: []
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+        - fromFieldPath: "spec.parameters.vpc.tags"
+          toFieldPath: "spec.forProvider.tags"
+    - name: igw-attachment
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: InternetGatewayAttachment
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: igw-attachment
+        spec:
+          forProvider:
+            region: ""
+            internetGatewayIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: igw
+            vpcIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: vpc
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    - name: public-route-table
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: RouteTable
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: public-rt
+        spec:
+          forProvider:
+            region: ""
+            vpcIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: vpc
+            routes:
+              - destinationCidrBlock: 0.0.0.0/0
+                gatewayIdSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    network.aws.crossplane.io/component: igw
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    {{- if gt (len .Values.composition.publicSubnets) 0 }}
+    {{- range $i, $sn := .Values.composition.publicSubnets }}
+    - name: public-route-association-{{ $i }}
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: RouteTableAssociation
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: public-assoc
+        spec:
+          forProvider:
+            region: ""
+            routeTableIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: public-rt
+            subnetIdSelector:
+              matchLabels:
+                network.aws.crossplane.io/subnet-name: {{ $sn.name | quote }}
+                network.aws.crossplane.io/subnet-type: public
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    {{- end }}
+    {{- end }}
+    {{- if .Values.composition.natGateway.enabled }}
+    - name: nat-eip
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: EIP
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: nat-eip
+        spec:
+          forProvider:
+            region: ""
+            domain: vpc
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    - name: nat-gateway
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: NATGateway
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: nat
+        spec:
+          forProvider:
+            region: ""
+            allocationIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: nat-eip
+            subnetIdSelector:
+              matchLabels:
+                network.aws.crossplane.io/subnet-type: public
+                network.aws.crossplane.io/subnet-index: "{{ .Values.composition.natGateway.publicSubnetIndex }}"
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    - name: private-route-table
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: RouteTable
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: private-rt
+        spec:
+          forProvider:
+            region: ""
+            vpcIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: vpc
+            routes:
+              - destinationCidrBlock: 0.0.0.0/0
+                natGatewayIdSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    network.aws.crossplane.io/component: nat
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    {{- if gt (len .Values.composition.privateSubnets) 0 }}
+    {{- range $i, $sn := .Values.composition.privateSubnets }}
+    - name: private-route-association-{{ $i }}
+      base:
+        apiVersion: ec2.aws.crossplane.io/v1beta1
+        kind: RouteTableAssociation
+        metadata:
+          labels:
+            network.aws.crossplane.io/component: private-assoc
+        spec:
+          forProvider:
+            region: ""
+            routeTableIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                network.aws.crossplane.io/component: private-rt
+            subnetIdSelector:
+              matchLabels:
+                network.aws.crossplane.io/subnet-name: {{ $sn.name | quote }}
+                network.aws.crossplane.io/subnet-type: private
+          providerConfigRef:
+            name: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.region"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+    {{- end }}
+    {{- end }}
+    {{- end }}
+{{- end }}
+

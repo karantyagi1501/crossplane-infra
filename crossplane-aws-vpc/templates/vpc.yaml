@@ -1,22 +1,47 @@
-apiVersion: ec2.aws.crossplane.io/v1beta1
+{{- if .Values.composition.enabled }}
+apiVersion: network.aws.crossplane.io/v1alpha1
 kind: VPC
 metadata:
-  name: {{ .Values.vpc.name | quote }}
-  {{- if .Values.installOrder.enabled }}
-  annotations:
-    argocd.argoproj.io/sync-wave: {{ .Values.installOrder.vpcWave | quote }}
-    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-  {{- end }}
+  name: {{ .Values.composition.claimName | quote }}
 spec:
-  forProvider:
+  compositionRef:
+    name: {{ .Values.composition.name | quote }}
+  parameters:
     region: {{ .Values.aws.region | quote }}
-    cidrBlock: {{ .Values.vpc.cidrBlock | quote }}
-    enableDnsSupport: {{ .Values.vpc.enableDnsSupport }}
-    enableDnsHostnames: {{ .Values.vpc.enableDnsHostnames }}
-    tags:
-{{- range .Values.vpc.tags }}
-      - key: {{ .key | quote }}
-        value: {{ .value | quote }}
+    providerConfigName: {{ .Values.composition.providerConfigName | quote }}
+    vpc:
+      cidrBlock: {{ .Values.composition.vpc.cidrBlock | quote }}
+      enableDnsSupport: {{ .Values.composition.vpc.enableDnsSupport }}
+      enableDnsHostnames: {{ .Values.composition.vpc.enableDnsHostnames }}
+      tags:
+{{- range .Values.composition.vpc.tags }}
+        - key: {{ .key | quote }}
+          value: {{ .value | quote }}
 {{- end }}
-  providerConfigRef:
-    name: aws-provider
+    natGateway:
+      enabled: {{ .Values.composition.natGateway.enabled }}
+      publicSubnetIndex: {{ .Values.composition.natGateway.publicSubnetIndex }}
+    publicSubnets:
+{{- range .Values.composition.publicSubnets }}
+      - name: {{ .name | quote }}
+        cidrBlock: {{ .cidrBlock | quote }}
+        availabilityZone: {{ .availabilityZone | quote }}
+        tags:
+{{- range .tags }}
+          - key: {{ .key | quote }}
+            value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+    privateSubnets:
+{{- range .Values.composition.privateSubnets }}
+      - name: {{ .name | quote }}
+        cidrBlock: {{ .cidrBlock | quote }}
+        availabilityZone: {{ .availabilityZone | quote }}
+        tags:
+{{- range .tags }}
+          - key: {{ .key | quote }}
+            value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+

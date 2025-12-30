@@ -1,0 +1,106 @@
+{{- if .Values.composition.enabled }}
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: compositevpcs.network.aws.crossplane.io
+spec:
+  group: network.aws.crossplane.io
+  names:
+    kind: CompositeVPC
+    plural: compositevpcs
+  claimNames:
+    kind: VPC
+    plural: vpcs
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    region:
+                      type: string
+                    providerConfigName:
+                      type: string
+                    vpc:
+                      type: object
+                      properties:
+                        cidrBlock:
+                          type: string
+                        enableDnsSupport:
+                          type: boolean
+                        enableDnsHostnames:
+                          type: boolean
+                        tags:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              key:
+                                type: string
+                              value:
+                                type: string
+                    natGateway:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        publicSubnetIndex:
+                          type: integer
+                    publicSubnets:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          cidrBlock:
+                            type: string
+                          availabilityZone:
+                            type: string
+                          mapPublicIpOnLaunch:
+                            type: boolean
+                          tags:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                key:
+                                  type: string
+                                value:
+                                  type: string
+                    privateSubnets:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          cidrBlock:
+                            type: string
+                          availabilityZone:
+                            type: string
+                          mapPublicIpOnLaunch:
+                            type: boolean
+                          tags:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                key:
+                                  type: string
+                                value:
+                                  type: string
+              required:
+                - parameters
+          required:
+            - spec
+{{- end }}
+
