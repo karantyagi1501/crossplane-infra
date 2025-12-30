@@ -14,8 +14,9 @@ spec:
     enableDnsSupport: {{ .Values.vpc.enableDnsSupport }}
     enableDnsHostnames: {{ .Values.vpc.enableDnsHostnames }}
     tags:
-{{- range $key, $value := .Values.vpc.tags }}
-      {{ $key }}: {{ $value | quote }}
+{{- range .Values.vpc.tags }}
+      - key: {{ .key | quote }}
+        value: {{ .value | quote }}
 {{- end }}
   providerConfigRef:
     name: aws-provider
