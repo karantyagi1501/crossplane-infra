@@ -1,4 +1,4 @@
-# AWS Provider configuration
+# AWS configuration
 aws:
   region: ap-south-1
 
@@ -11,6 +11,12 @@ credentials:
   secretName: aws-secret
   secretKey: creds
 
+# Optional Argo CD sync waves to install the provider before other resources
+installOrder:
+  enabled: true
+  providerWave: "0"
+  providerConfigWave: "1"
+  vpcWave: "2"
 
 # Values for the VPC stack
 vpc:
