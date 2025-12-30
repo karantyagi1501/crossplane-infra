@@ -37,7 +37,6 @@ subnets:
       - name: demo-public-subnet-a
         cidrBlock: 10.0.1.0/24
         availabilityZone: ap-south-1a
-        mapPublicIpOnLaunch: true
         tags:
           - key: Name
             value: demo-public-subnet-a
@@ -58,7 +57,6 @@ subnets:
       - name: demo-private-subnet-a
         cidrBlock: 10.0.2.0/24
         availabilityZone: ap-south-1a
-        mapPublicIpOnLaunch: false
         tags:
           - key: Name
             value: demo-private-subnet-a
