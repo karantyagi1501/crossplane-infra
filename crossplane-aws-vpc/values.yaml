@@ -4,7 +4,7 @@ aws:
   
 provider:
   # AWS provider package (Upbound)
-  package: xpkg.upbound.io/upbound/provider-family-aws:v2.3.0
+  package: xpkg.upbound.io/upbound/provider-aws:v0.56.0
 
 credentials:
   secretNamespace: crossplane-system
