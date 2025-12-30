@@ -3,6 +3,7 @@ apiVersion: network.aws.crossplane.io/v1alpha1
 kind: VPC
 metadata:
   name: {{ .Values.composition.claimName | quote }}
+  namespace: {{ .Values.composition.claimNamespace | quote }}
 spec:
   compositionRef:
     name: {{ .Values.composition.name | quote }}
