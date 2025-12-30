@@ -9,46 +9,67 @@
   {{- $syncOpts = "SkipDryRunOnMissingResource=true" -}}
 {{- end }}
 
-{{- define "renderSubnet" -}}
+{{- if $hasPublic }}
+{{- range $ctx.Values.subnets.public.items }}
+---
 apiVersion: ec2.aws.crossplane.io/v1beta1
 kind: Subnet
 metadata:
-  name: {{ .item.name | quote }}
-  {{- if $.wave }}
+  name: {{ .name | quote }}
+  {{- if $wave }}
   annotations:
-    argocd.argoproj.io/sync-wave: {{ $.wave }}
-    argocd.argoproj.io/sync-options: {{ $.syncOpts }}
+    argocd.argoproj.io/sync-wave: {{ $wave }}
+    argocd.argoproj.io/sync-options: {{ $syncOpts }}
   {{- end }}
 spec:
   forProvider:
-    region: {{ $.region | quote }}
-    availabilityZone: {{ .item.availabilityZone | quote }}
-    cidrBlock: {{ .item.cidrBlock | quote }}
-    mapPublicIpOnLaunch: {{ default false .item.mapPublicIpOnLaunch }}
+    region: {{ $ctx.Values.aws.region | quote }}
+    availabilityZone: {{ .availabilityZone | quote }}
+    cidrBlock: {{ .cidrBlock | quote }}
+    mapPublicIpOnLaunch: {{ default false .mapPublicIpOnLaunch }}
     vpcIdRef:
-      name: {{ $.vpcName | quote }}
-    {{- if .item.tags }}
+      name: {{ $ctx.Values.vpc.name | quote }}
+    {{- if .tags }}
     tags:
-    {{- range .item.tags }}
+    {{- range .tags }}
       - key: {{ .key | quote }}
         value: {{ .value | quote }}
     {{- end }}
     {{- end }}
   providerConfigRef:
-    name: {{ $.providerConfigName | quote }}
-{{- end }}
-
-{{- if $hasPublic }}
-{{- range $ctx.Values.subnets.public.items }}
----
-{{ template "renderSubnet" (dict "item" . "region" $ctx.Values.aws.region "vpcName" $ctx.Values.vpc.name "providerConfigName" "aws-provider" "wave" $wave "syncOpts" $syncOpts) }}
+    name: aws-provider
 {{- end }}
 {{- end }}
 
 {{- if $hasPrivate }}
 {{- range $ctx.Values.subnets.private.items }}
 ---
-{{ template "renderSubnet" (dict "item" . "region" $ctx.Values.aws.region "vpcName" $ctx.Values.vpc.name "providerConfigName" "aws-provider" "wave" $wave "syncOpts" $syncOpts) }}
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: Subnet
+metadata:
+  name: {{ .name | quote }}
+  {{- if $wave }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $wave }}
+    argocd.argoproj.io/sync-options: {{ $syncOpts }}
+  {{- end }}
+spec:
+  forProvider:
+    region: {{ $ctx.Values.aws.region | quote }}
+    availabilityZone: {{ .availabilityZone | quote }}
+    cidrBlock: {{ .cidrBlock | quote }}
+    mapPublicIpOnLaunch: {{ default false .mapPublicIpOnLaunch }}
+    vpcIdRef:
+      name: {{ $ctx.Values.vpc.name | quote }}
+    {{- if .tags }}
+    tags:
+    {{- range .tags }}
+      - key: {{ .key | quote }}
+        value: {{ .value | quote }}
+    {{- end }}
+    {{- end }}
+  providerConfigRef:
+    name: aws-provider
 {{- end }}
 {{- end }}
 {{- end }}
