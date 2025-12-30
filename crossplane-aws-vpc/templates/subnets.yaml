@@ -4,49 +4,30 @@
 {{- if and $ctx.Values.subnets.enabled (or $hasPublic $hasPrivate) }}
 {{- $wave := "" -}}
 {{- $syncOpts := "" -}}
+{{- $items := list -}}
 {{- if $ctx.Values.installOrder.enabled }}
   {{- $wave = $ctx.Values.installOrder.subnetWave | quote -}}
   {{- $syncOpts = "SkipDryRunOnMissingResource=true" -}}
 {{- end }}
 
 {{- if $hasPublic }}
-{{- range $ctx.Values.subnets.public.items }}
----
-apiVersion: ec2.aws.crossplane.io/v1beta1
-kind: Subnet
-metadata:
-  name: {{ .name | quote }}
-  {{- if $wave }}
-  annotations:
-    argocd.argoproj.io/sync-wave: {{ $wave }}
-    argocd.argoproj.io/sync-options: {{ $syncOpts }}
+  {{- range $ctx.Values.subnets.public.items }}
+    {{- $items = append $items (dict "item" . "isPublic" true) }}
   {{- end }}
-spec:
-  forProvider:
-    region: {{ $ctx.Values.aws.region | quote }}
-    availabilityZone: {{ .availabilityZone | quote }}
-    cidrBlock: {{ .cidrBlock | quote }}
-    vpcIdRef:
-      name: {{ $ctx.Values.vpc.name | quote }}
-    {{- if .tags }}
-    tags:
-    {{- range .tags }}
-      - key: {{ .key | quote }}
-        value: {{ .value | quote }}
-    {{- end }}
-    {{- end }}
-  providerConfigRef:
-    name: aws-provider
-{{- end }}
 {{- end }}
 
 {{- if $hasPrivate }}
-{{- range $ctx.Values.subnets.private.items }}
+  {{- range $ctx.Values.subnets.private.items }}
+    {{- $items = append $items (dict "item" . "isPublic" false) }}
+  {{- end }}
+{{- end }}
+
+{{- range $items }}
 ---
 apiVersion: ec2.aws.crossplane.io/v1beta1
 kind: Subnet
 metadata:
-  name: {{ .name | quote }}
+  name: {{ .item.name | quote }}
   {{- if $wave }}
   annotations:
     argocd.argoproj.io/sync-wave: {{ $wave }}
@@ -55,19 +36,19 @@ metadata:
 spec:
   forProvider:
     region: {{ $ctx.Values.aws.region | quote }}
-    availabilityZone: {{ .availabilityZone | quote }}
-    cidrBlock: {{ .cidrBlock | quote }}
+    availabilityZone: {{ .item.availabilityZone | quote }}
+    cidrBlock: {{ .item.cidrBlock | quote }}
+    mapPublicIpOnLaunch: {{ default .isPublic .item.mapPublicIpOnLaunch }}
     vpcIdRef:
       name: {{ $ctx.Values.vpc.name | quote }}
-    {{- if .tags }}
+    {{- if .item.tags }}
     tags:
-    {{- range .tags }}
+    {{- range .item.tags }}
       - key: {{ .key | quote }}
         value: {{ .value | quote }}
     {{- end }}
     {{- end }}
   providerConfigRef:
     name: aws-provider
-{{- end }}
 {{- end }}
 {{- end }}
